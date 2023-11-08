@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>D.H.</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='dh.css') }}">
+        <script src="{{ url_for('static', filename='apexchart/apexchart.js') }}" > </script>
+        <script src="{{ url_for('static', filename='lotto.js') }}" > </script>
+    </head>
+    <body>
+        <div class="canvas-container">
+            <canvas></canvas>
+        </div>
+        <div class='chart'>
+            <div id="treemap0"></div>
+            <div id="treemap1"></div>
+        </div>
+        <table cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>NO</th>
+                    <th>Date</th>
+                    <th>#N1</th>
+                    <th>#N2</th>
+                    <th>#N3</th>
+                    <th>#N4</th>
+                    <th>#N5</th>
+                    <th>#N6</th>
+                    <th>Sellment</th>
+                    <th>Last Winamnt</th>
+                </tr>
+            </thead>
+        </table>
+        <div class="lotto-list">
+            <table cellpadding="0" cellspacing="0">
+                <tbody>
+                    {% for obj in list %}
+                    <tr>
+                        <td>{{ obj.drwNo }}</td>
+                        <td>{{ obj.drwNoDate }}</td>
+                        <td>{{ obj.drwtNo1 }}</td>
+                        <td>{{ obj.drwtNo2 }}</td>
+                        <td>{{ obj.drwtNo3 }}</td>
+                        <td>{{ obj.drwtNo4 }}</td>
+                        <td>{{ obj.drwtNo5 }}</td>
+                        <td>{{ obj.drwtNo6 }}</td>
+                        <td>{{ obj.totSellamnt }}</td>
+                        <td>{{ obj.firstWinamnt }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </body>
+    
+    <script>
+
+        /* -------------------------------------- */
+        /* ------------  Settings  -------------- */
+        /* -------------------------------------- */
+
+        //text = 'HELLO';  // The message displayed
+        //chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  // All possible Charactrers
+        //text = text.split('');
+        //chars = chars.split('');
+
+        scale = 60;  // Font size and overall scale
+        breaks = 0.003;  // Speed loss per frame
+        endSpeed = 0.05;  // Speed at which the letter stops
+        firstLetter = 220;  // Number of frames untill the first letter stopps (60 frames per second)
+        delay = 40;  // Number of frames between letters stopping
+
+        text = []
+        chars = []
+
+        canvas = document.querySelector('canvas');
+        ctx = canvas.getContext('2d');
+
+        for(var i=0;i<6;i++){
+            text[i] = (Math.floor(Math.random() * 45)+1).toString();
+        }
+
+        for(var i=0;i<45;i++){
+            chars[i] = (i+1).toString();
+        }
+
+
+        charMap = [];
+        offset = [];
+        offsetV = [];
+
+        for(var i=0;i<chars.length;i++){
+        charMap[chars[i]] = i;
+        }
+
+        for(var i=0;i<text.length;i++){
+        var f = firstLetter+delay*i;
+        offsetV[i] = endSpeed+breaks*f;
+        offset[i] = -(1+f)*(breaks*f+2*endSpeed)/2;
+        }
+
+        (onresize = function(){
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        })();
+
+        requestAnimationFrame(loop = function(){
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#622';
+        ctx.fillRect(0,(canvas.height-scale)/2,canvas.width,scale);
+        for(var i=0;i<text.length;i++){
+            ctx.fillStyle = '#ccc';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            ctx.setTransform(1,0,0,1,Math.floor((canvas.width-scale*(text.length-1))/2),Math.floor(canvas.height/2));
+            var o = offset[i];
+            while(o<0)o++;
+            o %= 1;
+            var h = Math.ceil(canvas.height/2/scale)
+            for(var j=-h;j<h;j++){
+            var c = charMap[text[i]]+j-Math.floor(offset[i]);
+            while(c<0)c+=chars.length;
+            c %= chars.length;
+            //var s =0.5;
+            var s =(1-Math.abs(j+o)/(canvas.height/2/scale+1))*0.6;
+            ctx.globalAlpha = s
+            ctx.font = scale*s + 'px Helvetica'
+            ctx.fillText(chars[c],scale*i,(j+o)*scale);
+            }
+            offset[i] += offsetV[i];
+            offsetV[i] -= breaks;
+            if(offsetV[i]<endSpeed){
+            offset[i] = 0;
+            offsetV[i] = 0;
+            }
+        }
+        
+        requestAnimationFrame(loop);
+        });    
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            
+            var list = JSON.parse('{{list|tojson}}') ;
+            //console.log(list)
+           
+            num_stack = []
+            bar_stack = []
+            bar_name = []
+            for(var i=0;i<45;i++){
+                num_stack.push({x:''+(i+1), y:0}) 
+            }
+               
+            for(var i=0;i<list.length;i++){
+            //for(var i=0;i<200;i++){
+                num_stack[list[i].drwtNo1-1].y++;
+                num_stack[list[i].drwtNo2-1].y++;
+                num_stack[list[i].drwtNo3-1].y++;
+                num_stack[list[i].drwtNo4-1].y++;
+                num_stack[list[i].drwtNo5-1].y++;
+                num_stack[list[i].drwtNo6-1].y++;
+            }
+            
+            for(var i=0;i<num_stack.length;i++){
+                bar_stack.push(num_stack[i].y)
+                bar_name.push(i.toString())
+            }
+
+            console.log(num_stack)
+            console.log(bar_stack)
+                 
+            var options = {
+            series: [
+                {
+                    data:num_stack
+                }
+            ],
+            legend: {
+                show: false
+            },
+            chart: {
+                height: 350,
+                type: 'treemap'
+            },
+            title: {
+                text: 'Stack of Number (Treemap)'
+            }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#treemap0"), options);
+            chart.render();
+
+            
+            var options = {
+            series: [{
+            name: "Number Stack",
+            data: bar_stack
+            }],
+            chart: {
+            type: 'area',
+            height: 350,
+            zoom: {
+                enabled: false
+            }
+            },
+            dataLabels: {
+            enabled: false
+            },
+            stroke: {
+            curve: 'straight'
+            },
+            
+            title: {
+            text: 'Stack of Number (Area)',
+            align: 'left'
+            },
+            subtitle: {
+            text: 'Price Movements',
+            align: 'left'
+            },
+            yaxis: {
+            opposite: true
+            },
+            legend: {
+            horizontalAlign: 'left'
+            }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#treemap1"), options);
+            chart.render();
+
+        });
+    </script>
+</html>
